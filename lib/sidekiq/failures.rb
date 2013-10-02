@@ -31,6 +31,15 @@ module Sidekiq
     @failures_default_mode || :all
   end
 
+  def self.failures_store_max_count=(integer)
+    @failures_default_mode = integer
+  end
+
+  def self.failures_store_max_count
+    @failures_default_mode
+  end
+
+
   module Failures
   end
 end

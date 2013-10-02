@@ -130,6 +130,26 @@ module Sidekiq
         assert_equal 1, $invokes
       end
 
+      it "not records failure if failures_store_max_count exceeded" do
+        Sidekiq.failures_store_max_count = 1
+
+        msg = create_work('class' => MockWorker.to_s, 'args' => ['myarg'], 'retry_count' => 24)
+
+        assert_equal 0, failures_count
+
+        assert_raises TestException do
+          @processor.process(msg)
+        end
+
+        10.times do |i|
+          new_processor = ::Sidekiq::Processor.new(MiniTest::Mock.new)
+          msg = create_work('class' => MockWorker.to_s, 'args' => ['myarg'], 'retry_count' => 24)
+          @processor.process(msg) rescue nil
+        end
+
+        assert_equal 1, failures_count
+      end
+
       def failures_count
         Sidekiq.redis { |conn|conn.llen('failed') } || 0
       end

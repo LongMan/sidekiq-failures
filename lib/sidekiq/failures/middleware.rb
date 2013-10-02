@@ -19,7 +19,9 @@ module Sidekiq
           :queue => queue
         }
 
-        Sidekiq.redis { |conn| conn.lpush(:failed, Sidekiq.dump_json(data)) }
+        Sidekiq.redis do |conn|
+          conn.lpush(:failed, Sidekiq.dump_json(data))
+        end
 
         raise e
       end
@@ -27,6 +29,9 @@ module Sidekiq
       private
 
       def skip_failure?
+        if Sidekiq.failures_store_max_count.is_a?(Fixnum)
+          return true if Sidekiq.failures_store_max_count <= Sidekiq.redis { |conn|conn.llen(:failed) }
+        end
         failure_mode == :off || not_exhausted?
       end
 
