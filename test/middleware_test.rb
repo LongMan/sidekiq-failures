@@ -150,8 +150,29 @@ module Sidekiq
         assert_equal 1, failures_count
       end
 
+      it "sould clean queue" do
+        msg = create_work('class' => MockWorker.to_s, 'args' => ['myarg'], 'retry_count' => 24)
+
+        assert_raises TestException do
+          @processor.process(msg)
+        end
+
+        assert_equal 1, failures_count
+        assert_equal 1, Sidekiq.failures_count
+        assert_equal 1, $invokes
+
+        Sidekiq.clean_failures
+
+        assert_equal 0, failures_count
+        assert_equal 0, failures_stats_count
+      end
+
       def failures_count
-        Sidekiq.redis { |conn|conn.llen('failed') } || 0
+        Sidekiq.redis { |conn| conn.llen('failed') } || 0
+      end
+
+      def failures_stats_count
+        Sidekiq.redis { |conn| conn.get('stats:failed') } || 0
       end
 
       def create_work(msg)

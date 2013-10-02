@@ -39,6 +39,16 @@ module Sidekiq
     @failures_default_mode
   end
 
+  def self.clean_failures
+    Sidekiq.redis do |conn|
+      conn.del("failed")
+      conn.set("stat:failed", 0)
+    end
+  end
+
+  def self.failures_count
+    Sidekiq.redis { |conn| conn.llen("failed") } || 0
+  end
 
   module Failures
   end
